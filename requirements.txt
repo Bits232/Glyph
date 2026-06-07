@@ -1,5 +1,5 @@
 Django==4.2.7
-groq==0.4.1
+groq==1.4.0
 python-dotenv==1.0.0
 requests==2.31.0
 supabase==2.0.0
