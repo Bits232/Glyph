@@ -4,10 +4,6 @@ An AI writing assistant that lives inside your editor. Generate content, edit ex
 
 Built with Django, vanilla JS, and Groq's Llama 3.1 for fast inference. Video transcription powered by Mux.
 
-![Glyph Editor](<!-- add your editor screenshot here -->)
-
----
-
 ## What it does
 
 Glyph has three modes, accessible from the AI panel on the right side of the editor:
