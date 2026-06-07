@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Join Waitlist - Glyph AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+        }
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            gap: 20px;
+        }
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .step.active {
+            background: #4f46e5;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #334155;
+            font-size: 1rem;
+        }
+        input[type="text"],
+        input[type="email"],
+        textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+        }
+        .checkbox-group label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .btn {
+            padding: 18px 40px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: block;
+            width: 100%;
+            margin-top: 30px;
+        }
+        .btn:hover {
+            background: #4338ca;
+        }
+        .btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .success-message {
+            text-align: center;
+            padding: 40px;
+        }
+        .success-icon {
+            font-size: 4rem;
+            color: #10b981;
+            margin-bottom: 20px;
+        }
+        .success-title {
+            font-size: 2rem;
+            color: #334155;
+            margin-bottom: 10px;
+        }
+        .success-text {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        .test-credentials {
+            background: #f0f9ff;
+            border: 2px dashed #0ea5e9;
+            border-radius: 14px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .test-title {
+            color: #0369a1;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        .test-details {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1rem;
+            color: #0f172a;
+            line-height: 1.8;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: #dc2626;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Glyph</div>
+            <div class="subtitle">AI-powered writing assistant. Join our waitlist for early access.</div>
+        </div>
+        
+        <div id="waitlistForm" class="card">
+            <div class="step-indicator">
+                <div class="step active">1</div>
+                <div class="step">2</div>
+                <div class="step">3</div>
+            </div>
+            
+            <form id="onboardingForm">
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="fullName" placeholder="John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label>How do you plan to use Glyph?</label>
+                    <textarea id="useCase" name="useCase" placeholder="e.g., Writing blog posts, creating meeting notes, academic writing, etc."></textarea>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="will_use_app" name="will_use_app" checked>
+                    <label for="will_use_app">I plan to use this app regularly</label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="okay_with_emails" name="okay_with_emails">
+                    <label for="okay_with_emails">Send me updates about Glyph's development</label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="would_pay" name="would_pay">
+                    <label for="would_pay">I would pay for a premium version</label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="additional_info">Anything else you'd like to share?</label>
+                    <textarea id="additional_info" name="additional_info" placeholder="Feature requests, suggestions, etc."></textarea>
+                </div>
+                
+                <div id="errorMessage" class="error"></div>
+                
+                <button type="submit" class="btn">Join Waitlist</button>
+            </form>
+        </div>
+        
+        <div id="successMessage" class="card hidden">
+            <div class="success-message">
+                <div class="success-icon">✓</div>
+                <h2 class="success-title">You're on the list!</h2>
+                <p class="success-text">
+                    Thank you for joining the Glyph waitlist. We'll notify you when we launch.<br>
+                    In the meantime, you can try the demo version:
+                </p>
+                
+                <div class="test-credentials">
+                    <div class="test-title">Demo Access for DEV Challenge:</div>
+                    <div class="test-details">
+                        Demo URL: <span id="demoUrl"></span><br>
+                        Email: test@glyph.com<br>
+                        Password: GlyphTest2024
+                    </div>
+                </div>
+                
+                <button onclick="window.location.href='/login/'" class="btn" style="margin-top: 30px;">
+                    Try Demo Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if already submitted from query param
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('already') === 'true') {
+            showSuccessMessage();
+        }
+        
+        document.getElementById('onboardingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                email: document.getElementById('email').value.trim(),
+                full_name: document.getElementById('fullName').value.trim(),
+                will_use_app: document.getElementById('will_use_app').checked,
+                okay_with_emails: document.getElementById('okay_with_emails').checked,
+                would_pay: document.getElementById('would_pay').checked,
+                use_case: document.getElementById('useCase').value.trim(),
+                additional_info: document.getElementById('additional_info').value.trim()
+            };
+            
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.style.display = 'none';
+            
+            if (!formData.email) {
+                errorElement.textContent = 'Email is required';
+                errorElement.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/submit-waitlist/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccessMessage();
+                    if (data.test_credentials) {
+                        document.getElementById('demoUrl').textContent = window.location.origin;
+                    }
+                } else {
+                    errorElement.textContent = data.error || 'Submission failed';
+                    errorElement.style.display = 'block';
+                }
+            } catch (error) {
+                errorElement.textContent = 'Network error. Please try again.';
+                errorElement.style.display = 'block';
+            }
+        });
+        
+        function showSuccessMessage() {
+            document.getElementById('waitlistForm').classList.add('hidden');
+            document.getElementById('successMessage').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

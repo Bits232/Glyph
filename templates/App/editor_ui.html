@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glyph - AI Writing Assistant</title>
+    
+    <!-- TipTap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tiptap/core@2.7.3/dist/tiptap.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ── Error / Success states ── */
+        .info-btn:hover {
+            background: #f5f5f5;
+            border-color: #111;
+            color: #111;
+        }
+        .error-item {
+            background: #fff5f5 !important;
+            border-color: #ffd0d0 !important;
+        }
+        .error-item .response-label { color: #c00 !important; }
+        .error-item .response-text  { color: #800; }
+
+        .success-item {
+            background: #f0faf0 !important;
+            border-color: #b8e6b8 !important;
+            transition: opacity 0.3s;
+        }
+        .success-item .response-label { color: #1a7f1a !important; }
+        .success-item .response-text  { color: #145214; }
+
+        /* ── Disabled states ── */
+        .ai-input:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .send-ai-btn:disabled {
+            background: #d0d0d0 !important;
+            cursor: not-allowed;
+        }
+
+        /* ── Base ── */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Segoe UI Variable', sans-serif;
+            background: #f7f7f7;
+            color: #111;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── App shell ── */
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ══════════════════════════════
+           LEFT SIDEBAR
+        ══════════════════════════════ */
+        .sidebar {
+            width: 260px;
+            background: #fff;
+            border-right: 1px solid #ebebeb;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid #ebebeb;
+        }
+
+        .sidebar-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #111;
+            letter-spacing: -0.01em;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 17px;
+            color: #111;
+            letter-spacing: 0.04em;
+        }
+
+        .new-doc-btn {
+            width: 100%;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.15s;
+            text-align: left;
+            letter-spacing: 0.01em;
+        }
+        .new-doc-btn:hover  { background: #2a2a2a; }
+        .new-doc-btn:active { transform: scale(0.985); }
+
+        .documents-list {
+            padding: 10px 8px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .document-item {
+            padding: 10px 12px;
+            margin-bottom: 2px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+        .document-item:hover  { background: #f5f5f5; }
+        .document-item.active { background: #f0f0f0; }
+
+        .doc-title {
+            font-weight: 500;
+            font-size: 13px;
+            color: #111;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .doc-meta {
+            font-size: 11px;
+            color: #999;
+        }
+
+        /* ══════════════════════════════
+           MAIN EDITOR
+        ══════════════════════════════ */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f7f7f7;
+            min-width: 0;
+        }
+
+        .editor-header {
+            padding: 0 24px;
+            height: 52px;
+            background: #fff;
+            border-bottom: 1px solid #ebebeb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .doc-title-input {
+            background: transparent;
+            border: none;
+            color: #111;
+            font-size: 15px;
+            font-weight: 600;
+            width: 55%;
+            outline: none;
+            letter-spacing: -0.01em;
+        }
+        .doc-title-input::placeholder { color: #bbb; }
+
+        .editor-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 14px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            color: #444;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.12s;
+        }
+        .action-btn:hover {
+            background: #f5f5f5;
+            border-color: #bbb;
+            color: #111;
+        }
+        .action-btn.primary {
+            background: #111;
+            border-color: #111;
+            color: #fff;
+        }
+        .action-btn.primary:hover { background: #333; }
+
+        /* ── User pill ── */
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px 5px 6px;
+            background: #f5f5f5;
+            border-radius: 20px;
+            margin-left: 4px;
+        }
+        .user-icon {
+            width: 26px;
+            height: 26px;
+            background: #111;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .user-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+        }
+        .logout-btn {
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+        .logout-btn:hover {
+            background: #fff;
+            border-color: #bbb;
+            color: #111;
+        }
+
+        /* ── Toolbar ── */
+        .tiptap-toolbar {
+            max-width: 860px;
+            margin: 20px auto 12px;
+            display: flex;
+            gap: 4px;
+            padding: 6px 8px;
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 10px;
+        }
+
+        .toolbar-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: #555;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.12s;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 34px;
+        }
+        .toolbar-btn:hover  { background: #f0f0f0; color: #111; }
+        .toolbar-btn.active { background: #111; color: #fff; }
+
+        /* ── ProseMirror / Editor canvas ── */
+        .tiptap-container {
+            flex: 1;
+            padding: 0 32px 32px;
+            overflow-y: auto;
+            background: #f7f7f7;
+        }
+
+        .tiptap-editor {
+            max-width: 860px;
+            margin: 0 auto;
+            min-height: 100%;
+        }
+
+        .ProseMirror {
+            min-height: 600px;
+            padding: 48px 52px;
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            color: #111;
+            font-size: 16px;
+            line-height: 1.8;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .ProseMirror:focus {
+            outline: none;
+            border-color: #ccc;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+        }
+        .ProseMirror h1 { font-size: 28px; font-weight: 700; line-height: 1.3; margin-bottom: 16px; letter-spacing: -0.02em; }
+        .ProseMirror h2 { font-size: 20px; font-weight: 600; line-height: 1.4; margin-bottom: 12px; margin-top: 24px; }
+        .ProseMirror p  { margin-bottom: 12px; }
+
+        /* ══════════════════════════════
+           RIGHT AI SIDEBAR
+        ══════════════════════════════ */
+        .ai-sidebar {
+            width: 340px;
+            background: #fff;
+            border-left: 1px solid #ebebeb;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .ai-header { padding: 0; border-bottom: none; }
+
+        /* ── Response panel ── */
+        .ai-response-panel {
+            flex: 1;
+            padding: 14px;
+            overflow-y: auto;
+            background: #fafafa;
+            border-bottom: 1px solid #ebebeb;
+        }
+
+        .response-item {
+            background: #fff;
+            border: 1px solid #ebebeb;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .response-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #999;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .response-text {
+            font-size: 13px;
+            line-height: 1.65;
+            color: #222;
+            white-space: pre-wrap;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 180px;
+            color: #bbb;
+            text-align: center;
+            padding: 24px;
+        }
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        .empty-state-text {
+            font-size: 13px;
+            color: #bbb;
+            line-height: 1.5;
+        }
+
+        /* ── AI Input area ── */
+        .ai-input-container {
+            padding: 14px;
+            background: #fff;
+        }
+
+        /* Action chips — pill toggle */
+        .action-chips {
+            display: flex;
+            gap: 0;
+            margin-bottom: 12px;
+            background: #f2f2f2;
+            border-radius: 9px;
+            padding: 3px;
+        }
+
+        .action-chip {
+            flex: 1;
+            padding: 7px 10px;
+            background: transparent;
+            border: none;
+            color: #777;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+            letter-spacing: 0.01em;
+        }
+        .action-chip:hover { color: #111; }
+        .action-chip.active {
+            background: #fff;
+            color: #111;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Input wrapper */
+        .ai-input-wrapper {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .attach-btn-wrapper {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+
+        .attach-btn {
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            color: #aaa;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.12s;
+        }
+        .attach-btn:hover { background: #f0f0f0; color: #555; }
+
+        .attach-dropdown {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 8px;
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            min-width: 220px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .attach-dropdown.active {
+            display: block;
+            animation: slideUp 0.18s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-item {
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: background 0.12s;
+            font-size: 13px;
+            color: #222;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background: #f9f9f9; }
+        .dropdown-item-icon { font-size: 16px; }
+        .dropdown-item-content { flex: 1; }
+        .dropdown-item-title { font-weight: 500; margin-bottom: 2px; font-size: 13px; }
+        .dropdown-item-desc  { font-size: 11px; color: #999; }
+
+        /* Context chip */
+        .input-context-chip {
+            position: absolute;
+            top: 9px;
+            right: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 7px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #666;
+            font-weight: 600;
+            font-family: 'Consolas', 'Monaco', monospace;
+            pointer-events: none;
+        }
+
+        .ai-input {
+            width: 100%;
+            padding: 30px 14px 12px 46px;
+            background: #fafafa;
+            border: 1.5px solid #e8e8e8;
+            border-radius: 10px;
+            color: #111;
+            resize: none;
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1.55;
+            transition: all 0.15s;
+        }
+        .ai-input:focus {
+            outline: none;
+            border-color: #bbb;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+        }
+        .ai-input::placeholder { color: #bbb; }
+
+        /* Send button */
+        .send-ai-btn {
+            width: 100%;
+            padding: 11px;
+            background: #111;
+            border: none;
+            color: #fff;
+            border-radius: 9px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.15s;
+            letter-spacing: 0.01em;
+        }
+        .send-ai-btn:hover:not(:disabled) { background: #2a2a2a; }
+        .send-ai-btn:active:not(:disabled) { transform: scale(0.985); }
+
+        /* Loading */
+        .ai-loading {
+            display: none;
+            text-align: center;
+            padding: 8px;
+            color: #999;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .ai-loading.active { display: block; }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e8e8e8;
+            border-top-color: #111;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Processing status */
+        .processing-status {
+            display: none;
+            padding: 10px 12px;
+            margin-top: 10px;
+            background: #f5f5f5;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #555;
+            text-align: center;
+        }
+        .processing-status.active { display: block; }
+
+        /* Video modal */
+        .video-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .video-modal-overlay.active { display: flex; }
+
+        .video-modal {
+            background: #fff;
+            border-radius: 14px;
+            padding: 28px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+        }
+        .video-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .video-modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111;
+        }
+        .video-modal-close {
+            background: #f5f5f5;
+            border: none;
+            font-size: 18px;
+            color: #666;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            transition: all 0.12s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .video-modal-close:hover { background: #e8e8e8; color: #111; }
+
+        .video-modal-body { margin-bottom: 20px; }
+        .video-modal-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .video-url-input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 9px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.15s;
+            background: #fafafa;
+        }
+        .video-url-input:focus {
+            outline: none;
+            border-color: #bbb;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+        }
+        .video-modal-hint {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .video-modal-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.12s;
+            border: none;
+        }
+        .modal-btn-cancel {
+            background: #f5f5f5;
+            color: #555;
+        }
+        .modal-btn-cancel:hover { background: #ebebeb; color: #111; }
+        .modal-btn-primary {
+            background: #111;
+            color: #fff;
+        }
+        .modal-btn-primary:hover:not(:disabled) { background: #2a2a2a; }
+        .modal-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Responsive */
+        @media (max-width: 1200px) { .ai-sidebar { display: none; } }
+        @media (max-width: 768px)  {
+            .sidebar { display: none; }
+            .tiptap-toolbar { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        
+        <!-- LEFT: Documents Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><span class="logo">GLYPH</span> Writer</h2>
+                <button class="new-doc-btn" onclick="newDocument()">
+                    + New Document
+                </button>
+            </div>
+            
+            <div class="documents-list">
+                <div class="document-item active" onclick="loadDocument('doc1')">
+                    <div class="doc-title">Getting Started Guide</div>
+                    <div class="doc-meta">Just now • 245 words</div>
+                </div>
+                <div class="document-item" onclick="loadDocument('doc2')">
+                    <div class="doc-title">API Documentation</div>
+                    <div class="doc-meta">2 hours ago • 1,245 words</div>
+                </div>
+                <div class="document-item" onclick="loadDocument('doc3')">
+                    <div class="doc-title">DEV.to Blog Post</div>
+                    <div class="doc-meta">Yesterday • 850 words</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CENTER: Main Editor -->
+        <div class="editor-container">
+            <div class="editor-header">
+                
+                <input type="text" 
+                       class="doc-title-input" 
+                       id="doc-title"
+                       value="Getting Started Guide" 
+                       placeholder="Document Title">
+                
+                <div class="editor-actions">
+                    <button class="action-btn" onclick="saveDocument()">
+                        Save
+                    </button>
+                    <button class="action-btn" onclick="exportDocument()">
+                        Export
+                    </button>
+                    <div class="user-section">
+        
+    <span class="user-name">Test User</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+                </div>
+            </div>
+            
+            <!-- TipTap Toolbar -->
+            <div class="tiptap-toolbar">
+                <button class="toolbar-btn" onclick="formatText('bold')">
+                    <strong>B</strong>
+                </button>
+                <button class="toolbar-btn" onclick="formatText('italic')">
+                    <em>I</em>
+                </button>
+                <button class="toolbar-btn" onclick="formatText('code')">
+                    <code>{ }</code>
+                </button>
+                <button class="toolbar-btn" onclick="insertHeading(1)">
+                    H1
+                </button>
+                <button class="toolbar-btn" onclick="insertHeading(2)">
+                    H2
+                </button>
+                <button class="toolbar-btn" onclick="insertList('bullet')">
+                    • List
+                </button>
+                <button class="toolbar-btn" onclick="insertList('ordered')">
+                    1. List
+                </button>
+            </div>
+            
+            <!-- TipTap Editor -->
+            <div class="tiptap-container">
+                <div class="tiptap-editor">
+                    <div id="editor"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- RIGHT: AI Chat Sidebar -->
+        <div class="ai-sidebar">
+            <div class="ai-header">
+            </div>
+            
+            <!-- AI Response Panel -->
+            <div class="ai-response-panel" id="response-panel">
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <div class="empty-state-text">Ask questions or generate content</div>
+                </div>
+            </div>
+            
+            <!-- AI Input -->
+            <div class="ai-input-container">
+                <!-- Action Chips -->
+                <div class="action-chips">
+                    <div class="action-chip active" data-action="generate" onclick="selectAction('generate')">Generate</div>
+                    <div class="action-chip" data-action="edit" onclick="selectAction('edit')">Edit</div>
+                    <div class="action-chip" data-action="ask" onclick="selectAction('ask')">Ask</div>
+                </div>
+                
+                <!-- Input with context chip and attach button -->
+                <div class="ai-input-wrapper">
+                    <!-- Context chip (top right) -->
+                    <div class="input-context-chip">
+                        <span>📄</span>
+                        <span id="input-context-text">Whole doc</span>
+                    </div>
+                    
+                    <!-- Attach button (bottom left) -->
+                    <div class="attach-btn-wrapper">
+                        <button class="attach-btn" id="attach-btn" type="button">📎</button>
+                        <div class="attach-dropdown" id="attach-dropdown">
+                            <div class="dropdown-item" id="video-upload-option">
+                                <div class="dropdown-item-icon">🎥</div>
+                                <div class="dropdown-item-content">
+                                    <div class="dropdown-item-title">Convert video to text</div>
+                                    <div class="dropdown-item-desc">Upload a video file to transcribe</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <textarea class="ai-input" 
+                              id="ai-input"
+                              rows="3" 
+                              placeholder="Describe what to build next"></textarea>
+                </div>
+                
+                <!-- Processing status -->
+                <div class="processing-status" id="processing-status">
+                    <div class="spinner"></div>
+                    <span id="processing-text">Processing video...</span>
+                </div>
+                
+                <!-- Loading Indicator -->
+                <div class="ai-loading" id="ai-loading">
+                    <div class="spinner"></div>
+                    AI is thinking...
+                </div>
+                
+                <button class="send-ai-btn" id="send-ai-btn" onclick="sendToAI()">
+                    Send to AI
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video URL Modal -->
+    <div class="video-modal-overlay" id="video-modal-overlay">
+        <div class="video-modal">
+            <div class="video-modal-header">
+                <h3 class="video-modal-title">🎥 Convert Video to Text</h3>
+                <button class="video-modal-close" id="modal-close-btn">×</button>
+            </div>
+            
+            <div class="video-modal-body">
+                <label class="video-modal-label" for="video-url-input">Video URL</label>
+                <input 
+                    type="url" 
+                    id="video-url-input" 
+                    class="video-url-input"
+                    placeholder="Enter video link here"
+                />
+                <div class="video-modal-hint">
+                    Paste a direct video URL (.mp4, .mov) or a link from Vimeo, Dropbox, Google Drive. YouTube URLs are not supported.
+                </div>
+            </div>
+            
+            <div class="video-modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="modal-cancel-btn">Cancel</button>
+                <button class="modal-btn modal-btn-primary" id="modal-submit-btn">Get Transcript</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include TipTap -->
+    <script type="module">
+        import { Editor } from 'https://cdn.jsdelivr.net/npm/@tiptap/core@2.7.3/+esm'
+        import StarterKit from 'https://cdn.jsdelivr.net/npm/@tiptap/starter-kit@2.7.3/+esm'
+        
+        // Initialize TipTap (StarterKit already includes Code and CodeBlock)
+        window.editor = new Editor({
+            element: document.querySelector('#editor'),
+            extensions: [
+                StarterKit.configure({
+                    codeBlock: {
+                        languageClassPrefix: 'language-',
+                    }
+                })
+            ],
+            content: `
+                <h1>Welcome to Glyph ✨</h1>
+                <p>Start writing or use AI to generate content...</p>
+                
+                <h2>Quick Tips:</h2>
+                <ul>
+                    <li><strong>Generate:</strong> Create new content from scratch</li>
+                    <li><strong>Edit:</strong> Select text and improve it</li>
+                    <li><strong>Ask:</strong> Get answers about your text</li>
+                    <li><strong>Video:</strong> Click 📎 to transcribe videos</li>
+                </ul>
+                
+                <p><em>Try selecting edit and asking AI to "make this more professional"</em></p>
+            `,
+            onUpdate: updateContextDisplay,
+            onSelectionUpdate: updateContextDisplay,
+        })
+        
+        // Toolbar functions
+        window.formatText = (format) => {
+            if (format === 'bold') editor.chain().focus().toggleBold().run()
+            if (format === 'italic') editor.chain().focus().toggleItalic().run()
+            if (format === 'code') editor.chain().focus().toggleCode().run()
+        }
+        
+        window.insertHeading = (level) => {
+            editor.chain().focus().toggleHeading({ level }).run()
+        }
+        
+        window.insertList = (type) => {
+            if (type === 'bullet') editor.chain().focus().toggleBulletList().run()
+            if (type === 'ordered') editor.chain().focus().toggleOrderedList().run()
+        }
+        
+        
+        function logout() {
+            if(confirm('Are you sure you want to logout?')) {
+                window.location.href = '/logout/'
+            }
+        }
+
+        // Expose to window
+        window.logout = logout
+        // Update context display
+        function updateContextDisplay() {
+            const selection = editor.state.selection
+            const fullText = editor.getText()
+            const words = fullText.split(/\s+/).filter(w => w.length > 0)
+            
+            let chipText
+            
+            if (!selection.empty) {
+                const selectedText = editor.state.doc.textBetween(selection.from, selection.to)
+                const selectedWords = selectedText.split(/\s+/).filter(w => w.length > 0)
+                
+                const startPos = fullText.indexOf(selectedText)
+                const textBeforeSelection = fullText.substring(0, startPos)
+                const startWord = textBeforeSelection.split(/\s+/).filter(w => w.length > 0).length
+                const endWord = startWord + selectedWords.length - 1
+                
+                chipText = `w${startWord + 1}-w${endWord + 1}`
+            } else {
+                chipText = 'Whole doc'
+            }
+            
+            // Update only the input chip (removed header chip)
+            const inputChip = document.getElementById('input-context-text')
+            if (inputChip) {
+                inputChip.textContent = chipText
+            }
+        }
+        
+        // Get context text for AI
+        function getContextText() {
+            const selection = editor.state.selection
+            if (!selection.empty) {
+                return editor.state.doc.textBetween(selection.from, selection.to)
+            }
+            return editor.getText()
+        }
+        
+        // Get word range for display
+        function getWordRange() {
+            const selection = editor.state.selection
+            const fullText = editor.getText()
+            const words = fullText.split(/\s+/).filter(w => w.length > 0)
+            
+            if (!selection.empty) {
+                const selectedText = editor.state.doc.textBetween(selection.from, selection.to)
+                const selectedWords = selectedText.split(/\s+/).filter(w => w.length > 0)
+                
+                const startPos = fullText.indexOf(selectedText)
+                const textBeforeSelection = fullText.substring(0, startPos)
+                const startWord = textBeforeSelection.split(/\s+/).filter(w => w.length > 0).length
+                const endWord = startWord + selectedWords.length - 1
+                
+                return `w${startWord + 1}-w${endWord + 1}`
+            }
+            
+            return `w1-w${Math.min(50, words.length)}`
+        }
+        
+        // Initial context update
+        updateContextDisplay()
+        
+        // Expose functions globally
+        window.getContextText = getContextText
+        window.getWordRange = getWordRange
+    </script>
+
+    <!-- AI Service -->
+    <script>
+        let currentAction = 'generate'
+        
+        // Select action chip
+        function selectAction(action) {
+            currentAction = action
+            
+            // Update chip UI
+            document.querySelectorAll('.action-chip').forEach(chip => {
+                chip.classList.remove('active')
+            })
+            document.querySelector(`[data-action="${action}"]`).classList.add('active')
+            
+            // Update placeholder
+            const placeholders = {
+                'generate': 'Describe what to generate',
+                'edit': 'Describe what to change',
+                'ask': 'Ask a question about the text'
+            }
+            document.getElementById('ai-input').placeholder = placeholders[action]
+        }
+        
+        class AIService {
+            constructor() {
+                this.backendUrl = '/api/ai/'
+            }
+            
+            async sendRequest(userInput) {
+                try {
+                    this.setLoading(true)
+                    
+                    const context = getContextText()
+                    const wordRange = getWordRange()
+                    
+                    const response = await fetch(this.backendUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: currentAction,
+                            text: userInput,
+                            context: context,
+                            word_range: wordRange
+                        })
+                    })
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}. Please try again.`)
+                    }
+                    
+                    const data = await response.json()
+                    
+                    if (data.error) {
+                        throw new Error(data.error)
+                    }
+                    
+                    return data.result
+                    
+                } catch (error) {
+                    console.error('AI Error:', error)
+                    this.showError(error.message)
+                    throw error
+                } finally {
+                    this.setLoading(false)
+                }
+            }            setLoading(loading) {
+                const btn = document.getElementById('send-ai-btn')
+                const loadingEl = document.getElementById('ai-loading')
+                const input = document.getElementById('ai-input')
+                
+                btn.disabled = loading
+                input.disabled = loading
+                
+                if (loading) {
+                    loadingEl.classList.add('active')
+                    btn.textContent = 'Processing...'
+                } else {
+                    loadingEl.classList.remove('active')
+                    btn.textContent = 'Send to AI'
+                }
+            }
+            
+            showError(message) {
+                // Show error in response panel
+                const panel = document.getElementById('response-panel')
+                const emptyState = panel.querySelector('.empty-state')
+                if (emptyState) emptyState.remove()
+                
+                const errorItem = document.createElement('div')
+                errorItem.className = 'response-item error-item'
+                errorItem.innerHTML = `
+                    <div class="response-label">ERROR</div>
+                    <div class="response-text">❌ ${message}</div>
+                `
+                panel.appendChild(errorItem)
+                panel.scrollTop = panel.scrollHeight
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    errorItem.style.opacity = '0'
+                    errorItem.style.transition = 'opacity 0.3s'
+                    setTimeout(() => errorItem.remove(), 300)
+                }, 5000)
+            }
+            
+            showSuccess(message) {
+                // Show success notification
+                const panel = document.getElementById('response-panel')
+                const emptyState = panel.querySelector('.empty-state')
+                if (emptyState) emptyState.remove()
+                
+                const successItem = document.createElement('div')
+                successItem.className = 'response-item success-item'
+                successItem.innerHTML = `
+                    <div class="response-label">SUCCESS</div>
+                    <div class="response-text">✅ ${message}</div>
+                `
+                panel.appendChild(successItem)
+                panel.scrollTop = panel.scrollHeight
+                
+                // Auto-remove after 3 seconds
+                setTimeout(() => {
+                    successItem.style.opacity = '0'
+                    setTimeout(() => successItem.remove(), 300)
+                }, 3000)
+            }
+            
+            addResponseToPanel(text, type = 'answer') {
+                const panel = document.getElementById('response-panel')
+                
+                const emptyState = panel.querySelector('.empty-state')
+                if (emptyState) {
+                    emptyState.remove()
+                }
+                
+                const responseItem = document.createElement('div')
+                responseItem.className = 'response-item'
+                
+                const label = document.createElement('div')
+                label.className = 'response-label'
+                label.textContent = type === 'error' ? 'ERROR' : 'AI RESPONSE'
+                
+                const text_div = document.createElement('div')
+                text_div.className = 'response-text'
+                text_div.textContent = text
+                
+                responseItem.appendChild(label)
+                responseItem.appendChild(text_div)
+                
+                panel.appendChild(responseItem)
+                panel.scrollTop = panel.scrollHeight
+            }
+        }
+        const aiService = new AIService()
+        
+        // Send to AI
+        async function sendToAI() {
+            const userInput = document.getElementById('ai-input').value.trim()
+            
+            if (!userInput) {
+                aiService.showError('Please enter instructions for the AI')
+                return
+            }
+            
+            const selection = editor.state.selection
+            if (currentAction === 'edit' && !selection.empty) {
+                aiService.showError('Edit works on the whole document. Please clear your selection and try again.')
+                return
+            }
+            
+            try {
+                let result = await aiService.sendRequest(userInput)
+                
+                // ROBUST CLEANING: Remove all markdown code block variations
+                result = result.trim()
+                
+                // Remove opening code blocks (any language)
+                result = result.replace(/^```[\w]*\n?/i, '')
+                
+                // Remove closing code blocks
+                result = result.replace(/\n?```$/i, '')
+                
+                result = result.trim()
+                
+                
+                
+                if (currentAction === 'edit') {
+                    editor.commands.setContent(result)
+                    aiService.showSuccess('Document edited successfully!')
+                    
+                } else if (currentAction === 'generate') {
+                    const currentHTML = editor.getHTML()
+                    const cleanCurrent = currentHTML === '<p></p>' ? '' : currentHTML
+                    editor.commands.setContent(cleanCurrent + result)
+                    aiService.showSuccess('Content generated successfully!')
+                    
+                } else if (currentAction === 'ask') {
+                    // For ask, also clean the response
+                    result = result.replace(/^```[\w]*\n?/gi, '').replace(/\n?```$/gi, '').trim()
+                    aiService.addResponseToPanel(result, 'answer')
+                }
+                
+                document.getElementById('ai-input').value = ''
+                
+            } catch (error) {
+                console.error('Error in sendToAI:', error)
+            }
+        }
+            
+        // UI Functions
+        function toggleAttachDropdown(event) {
+            event.stopPropagation()
+            const dropdown = document.getElementById('attach-dropdown')
+            dropdown.classList.toggle('active')
+        }
+        
+        function openVideoModal() {
+            // Close dropdown
+            document.getElementById('attach-dropdown').classList.remove('active')
+            // Open modal
+            document.getElementById('video-modal-overlay').classList.add('active')
+            // Focus input
+            setTimeout(() => {
+                document.getElementById('video-url-input').focus()
+            }, 100)
+        }
+        
+        function closeVideoModal() {
+            document.getElementById('video-modal-overlay').classList.remove('active')
+            document.getElementById('video-url-input').value = ''
+        }
+        
+        // Setup attach button click handler
+        document.getElementById('attach-btn').addEventListener('click', toggleAttachDropdown)
+        
+        // Setup video upload option click
+        document.getElementById('video-upload-option').addEventListener('click', openVideoModal)
+        
+        // Setup modal close handlers
+        document.getElementById('modal-close-btn').addEventListener('click', closeVideoModal)
+        document.getElementById('modal-cancel-btn').addEventListener('click', closeVideoModal)
+        
+        // Close modal when clicking overlay
+        document.getElementById('video-modal-overlay').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeVideoModal()
+            }
+        })
+        
+        // Setup modal submit handler
+        document.getElementById('modal-submit-btn').addEventListener('click', handleVideoSubmit)
+        
+        async function handleVideoSubmit() {}
+        async function handleVideoSubmit() {
+    const videoUrl = document.getElementById('video-url-input').value.trim()
+    
+    if (!videoUrl) {
+        alert('Please enter a video URL')
+        return
+    }
+    
+    // Validate URL
+    try {
+        new URL(videoUrl)
+    } catch {
+        alert('Please enter a valid URL')
+        return
+    }
+    
+    closeVideoModal()
+    
+    const statusEl = document.getElementById('processing-status')
+    const statusText = document.getElementById('processing-text')
+    const aiInput = document.getElementById('ai-input')
+    const sendBtn = document.getElementById('send-ai-btn')
+    
+    // Disable UI
+    statusEl.classList.add('active')
+    aiInput.disabled = true
+    sendBtn.disabled = true
+    
+    // Progress updates
+    statusText.textContent = '📤 Uploading video to Mux...'
+    
+    try {
+        const response = await fetch('/api/video-to-text/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                video_url: videoUrl
+            })
+        })
+
+       
+
+        if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || `Server error: ${response.status}`)
+        }
+        // Update status
+        statusText.textContent = '⏳ Generating captions... This may take 5-10 minutes for long videos. Please be patient.'
+        
+        const data = await response.json()
+        
+        if (data.error) {
+            throw new Error(data.error)
+        }
+        
+        // Update status
+        statusText.textContent = '✨ Processing transcript...'
+        
+        // Insert transcript into editor
+        const transcript = data.transcript
+        const formattedTranscript = `<h2>📹 Video Transcript</h2><p>${transcript.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`
+        
+        const currentHTML = editor.getHTML()
+        editor.commands.setContent(currentHTML + formattedTranscript)
+        
+        // Hide status
+        statusEl.classList.remove('active')
+        aiInput.disabled = false
+        sendBtn.disabled = false
+        
+        // Show success
+        aiService.showSuccess('Video transcript generated successfully!')
+        
+    } catch (error) {
+        console.error('Video processing error:', error)
+        statusEl.classList.remove('active')
+        aiInput.disabled = false
+        sendBtn.disabled = false
+        
+        // Show detailed error
+        let errorMessage = error.message
+        
+        if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+            errorMessage = 'Video processing took too long. Please try a shorter video or try again later.'
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            errorMessage = 'Network error. Please check your internet connection and try again.'
+        } else if (errorMessage.includes('Mux')) {
+            errorMessage = 'Video service error. The video URL might be invalid or the service is temporarily unavailable.'
+        }
+        
+        aiService.showError(errorMessage)
+    }
+}
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('attach-dropdown')
+            const attachBtn = document.getElementById('attach-btn')
+            
+            if (dropdown && attachBtn && 
+                !attachBtn.contains(event.target) && 
+                !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active')
+            }
+        })
+        
+        function newDocument() {
+            if (confirm('Create new document? Current content will be lost.')) {
+                editor.commands.setContent('<h1>New Document</h1><p>Start writing here...</p>')
+                document.getElementById('doc-title').value = 'New Document'
+                updateContextDisplay()
+            }
+        }
+        
+        function saveDocument() {
+            const content = editor.getHTML()
+            const title = document.getElementById('doc-title').value
+            alert(`Title: ${title}\nLength: ${content.length} characters\nSave feature coming soon`)
+        }
+        
+        function exportDocument() {
+            alert('Export feature coming soon')
+        }
+        
+        function loadDocument(docId) {
+            const docs = {
+                'doc1': `<h1>Getting Started Guide</h1><p>Welcome to Glyph! This is your first document.</p>`,
+                'doc2': `<h1>API Documentation</h1><p>API endpoints and usage examples...</p>`,
+                'doc3': `<h1>Blog Post</h1><p>My thoughts on AI writing assistants...</p>`
+            }
+            
+            editor.commands.setContent(docs[docId] || docs.doc1)
+            updateContextDisplay()
+            
+            document.querySelectorAll('.document-item').forEach(item => item.classList.remove('active'))
+            event.currentTarget.classList.add('active')
+        }
+        
+        // Expose to window
+        window.sendToAI = sendToAI
+        window.selectAction = selectAction
+        window.toggleAttachDropdown = toggleAttachDropdown
+        window.openVideoModal = openVideoModal
+        window.closeVideoModal = closeVideoModal
+        window.handleVideoSubmit = handleVideoSubmit
+        window.newDocument = newDocument
+        window.saveDocument = saveDocument
+        window.exportDocument = exportDocument
+        window.loadDocument = loadDocument
+    </script>
+</body>
+</html>
